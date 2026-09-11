@@ -1,22 +1,23 @@
 import React from 'react';
 import {
   LayoutDashboard,
-  Boxes,
+  FolderGit2,
   GitBranch,
   Rocket,
-  Server,
-  Activity,
-  Terminal,
-  Bell,
   ShieldCheck,
+  Activity,
   Settings,
-  ChevronRight,
   Cloud,
-  Workflow,
-  Sparkles,
-  Globe
+  Container,
+  Layers,
+  HeartPulse,
+  Gauge,
+  Package,
+  FileCode,
+  Network,
+  Shield
 } from 'lucide-react';
-import { useDevSecOps, MainTabType } from '../../context/DevSecOpsContext';
+import { useDevSecOps } from '../../context/DevSecOpsContext';
 
 interface SidebarProps {
   currentTab: string;
@@ -24,24 +25,32 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => {
-  const { alerts, vulnerabilities } = useDevSecOps();
+  const { auditData, dockerImages, projects } = useDevSecOps();
 
-  const unpatchedCount = vulnerabilities.filter(v => !v.patched && (v.severity === 'CRITICAL' || v.severity === 'HIGH')).length;
-  const firingAlertsCount = alerts.filter(a => a.status === 'Firing').length;
+  const criticalHighCount = (auditData?.critical || 0) + (auditData?.high || 0);
 
-  const menuItems: Array<{ id: string; label: string; icon: any; hasSubmenu?: boolean; badge?: number | string; badgeColor?: string }> = [
+  const menuItems: Array<{
+    id: string;
+    label: string;
+    icon: any;
+    badge?: number | string;
+    badgeColor?: string;
+  }> = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'flowchart', label: 'Architecture Flow', icon: Workflow },
-    { id: 'applications', label: 'Applications', icon: Boxes, hasSubmenu: true },
+    { id: 'workspaces', label: 'Workspaces & Projects', icon: FolderGit2, badge: projects.length, badgeColor: 'bg-slate-700' },
     { id: 'cicd', label: 'CI/CD Pipelines', icon: GitBranch },
-    { id: 'deployments', label: 'Deployments', icon: Rocket, hasSubmenu: true },
-    { id: 'infrastructure', label: 'Infrastructure', icon: Server, hasSubmenu: true },
-    { id: 'monitoring', label: 'Monitoring', icon: Activity, hasSubmenu: true },
-    { id: 'logs', label: 'Logs', icon: Terminal },
-    { id: 'alerts', label: 'Alerts', icon: Bell, badge: firingAlertsCount > 0 ? firingAlertsCount : undefined, badgeColor: 'bg-red-500' },
-    { id: 'security', label: 'Security', icon: ShieldCheck, badge: unpatchedCount > 0 ? unpatchedCount : undefined, badgeColor: 'bg-amber-500' },
-    { id: 'ai-sre', label: 'AI SRE Copilot', icon: Sparkles },
-    { id: 'live-app', label: 'Live App Sandbox', icon: Globe, badge: 'Live', badgeColor: 'bg-emerald-500' },
+    { id: 'gitops', label: 'GitOps & Diffs', icon: GitBranch, badge: 'Git', badgeColor: 'bg-orange-600' },
+    { id: 'docker', label: 'Docker & Containers', icon: Container, badge: 'Live', badgeColor: 'bg-cyan-600' },
+    { id: 'kubernetes', label: 'Kubernetes Cluster', icon: Layers, badge: 'Cluster', badgeColor: 'bg-blue-600' },
+    { id: 'helm', label: 'Helm Marketplace', icon: Package, badge: 'Charts', badgeColor: 'bg-blue-500' },
+    { id: 'terraform', label: 'Terraform IaC', icon: FileCode },
+    { id: 'selfhealing', label: 'Self-Healing & SRE', icon: HeartPulse, badge: 'Watchdog', badgeColor: 'bg-emerald-600' },
+    { id: 'tracing', label: 'Distributed Tracing', icon: Network },
+    { id: 'traffic', label: 'API & Load Tester', icon: Gauge },
+    { id: 'rbac', label: 'Team RBAC & Audit', icon: Shield, badge: 'SOC2', badgeColor: 'bg-amber-600' },
+    { id: 'deployments', label: 'Deployments & Tools', icon: Rocket, badge: dockerImages.length > 0 ? `${dockerImages.length} img` : undefined, badgeColor: 'bg-purple-600' },
+    { id: 'security', label: 'Security & Quality', icon: ShieldCheck, badge: criticalHighCount > 0 ? criticalHighCount : undefined, badgeColor: 'bg-amber-500' },
+    { id: 'observability', label: 'Observability & Logs', icon: Activity },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -83,31 +92,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
                   <span>{item.label}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {item.badge !== undefined && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold text-white ${item.badgeColor || 'bg-slate-700'}`}>
-                      {item.badge}
-                    </span>
-                  )}
-                  {item.hasSubmenu && (
-                    <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                  )}
-                </div>
+                {item.badge !== undefined && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold text-white ${item.badgeColor || 'bg-slate-700'}`}>
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
       </div>
 
-      {/* Bottom Promotional Card */}
+      {/* Bottom Card */}
       <div className="p-4 m-3 rounded-2xl bg-gradient-to-br from-slate-900 to-[#13203b] border border-slate-800/90 text-xs shadow-inner">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
             <Cloud className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-bold text-white text-xs">Automated Platform</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Code to Cloud with Confidence</div>
+            <div className="font-bold text-white text-xs">Production Platform</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Real System &amp; DevOps Data</div>
           </div>
         </div>
       </div>

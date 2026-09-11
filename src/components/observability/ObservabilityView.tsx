@@ -28,7 +28,7 @@ import { useDevSecOps } from '../../context/DevSecOpsContext';
 import { TraceSpan } from '../../types/devsecops';
 
 export const ObservabilityView: React.FC = () => {
-  const { metricsHistory, logs, traces } = useDevSecOps();
+  const { metricsHistory, logs, traces, systemTelemetry } = useDevSecOps();
   const [logSearchQuery, setLogSearchQuery] = useState<string>('');
   const [selectedLogLevel, setSelectedLogLevel] = useState<string>('ALL');
   const [selectedTrace, setSelectedTrace] = useState<TraceSpan>(traces[0]);
@@ -45,8 +45,8 @@ export const ObservabilityView: React.FC = () => {
     rps: 240,
     latencyMs: 38,
     errorRatePercent: 0.02,
-    cpuPercent: 42,
-    memoryPercent: 54,
+    cpuPercent: systemTelemetry?.cpuPercent || 42,
+    memoryPercent: systemTelemetry?.memoryPercent || 54,
     activePods: 5
   };
 
@@ -79,6 +79,41 @@ export const ObservabilityView: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Real Local Host Telemetry Header */}
+      {systemTelemetry && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-[#0c1424] border border-cyan-500/20 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <Activity className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">Real Host Telemetry (Live Probes)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">ONLINE</span>
+              </div>
+              <div className="text-xs text-slate-300 mt-0.5 font-medium">
+                Host: <span className="text-white font-mono">{systemTelemetry.hostname}</span> &bull; Arch: <span className="text-cyan-300 font-mono">{systemTelemetry.cpuModel} ({systemTelemetry.cores} cores)</span> &bull; Total RAM: <span className="text-white font-mono">{systemTelemetry.totalMemoryGb} GB</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="text-right">
+              <div className="text-[10px] text-slate-400">Node.js Process Heap</div>
+              <div className="text-emerald-400 font-bold">{systemTelemetry.heapUsedMb} MB</div>
+            </div>
+            <div className="text-right border-l border-slate-800 pl-4">
+              <div className="text-[10px] text-slate-400">Primary IP</div>
+              <div className="text-cyan-400 font-bold">{systemTelemetry.networkInterfaces[0]?.ip || '127.0.0.1'}</div>
+            </div>
+            <div className="text-right border-l border-slate-800 pl-4">
+              <div className="text-[10px] text-slate-400">Host Uptime</div>
+              <div className="text-amber-300 font-bold">{systemTelemetry.uptimeHours} hrs</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Prometheus Telemetry Overview Gauges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: RPS */}

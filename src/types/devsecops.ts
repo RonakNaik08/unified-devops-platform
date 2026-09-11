@@ -176,3 +176,146 @@ export interface ActivePipelineRun {
   status: 'idle' | 'running' | 'success' | 'failed' | 'remediating';
   logs: string[];
 }
+
+export interface RealGitInfo {
+  repository: string;
+  branch: string;
+  commitHash: string;
+  author: string;
+  lastCommitMessage: string;
+  commits: Array<{
+    hash: string;
+    author: string;
+    date: string;
+    message: string;
+  }>;
+}
+
+export interface RealAuditData {
+  totalDependencies: number;
+  productionDependencies: number;
+  devDependencies: number;
+  vulnerabilitiesCount: number;
+  critical: number;
+  high: number;
+  moderate: number;
+  low: number;
+  vulnerabilities: Vulnerability[];
+}
+
+export interface RealSystemTelemetry {
+  timestamp: string;
+  timeLabel: string;
+  cpuPercent: number;
+  memoryPercent: number;
+  totalMemoryGb: string;
+  freeMemoryGb: string;
+  usedMemoryGb: string;
+  heapUsedMb: number;
+  uptimeHours: string;
+  cpuModel: string;
+  cores: number;
+  platform: string;
+  hostname: string;
+  networkInterfaces: Array<{
+    interface: string;
+    ip: string;
+    mac: string;
+  }>;
+}
+
+export interface ProjectWorkspace {
+  id: string;
+  name: string;
+  path: string;
+  type: string;
+  description: string;
+  branch: string;
+  commitHash: string;
+  author: string;
+  techStack: string[];
+  dockerfilePresent: boolean;
+  k8sManifestsPresent: boolean;
+  jenkinsfilePresent: boolean;
+  dependenciesCount?: number;
+  packageJson?: any;
+  lastScanned: string;
+}
+
+export interface DeploymentRecord {
+  id: string;
+  projectId: string;
+  projectName: string;
+  environment: string;
+  branch: string;
+  commitHash: string;
+  commitMessage: string;
+  author: string;
+  status: 'SUCCESS' | 'FAILED' | 'IN_PROGRESS';
+  dockerImage: string;
+  dockerImageSize: string;
+  k8sNamespace: string;
+  k8sDeployment: string;
+  k8sReplicas: string;
+  jenkinsJob: string;
+  jenkinsBuildNumber: number;
+  duration: string;
+  logs: string[];
+  timestamp: string;
+}
+
+export interface DockerImageDetail {
+  repository: string;
+  tag: string;
+  id: string;
+  createdSince: string;
+  size: string;
+}
+
+export interface DockerContainerDetail {
+  id: string;
+  image: string;
+  command: string;
+  createdAt: string;
+  status: string;
+  ports: string;
+  names: string;
+}
+
+export interface K8sDeploymentDetail {
+  namespace: string;
+  name: string;
+  replicas: string;
+  upToDate: number;
+  available: number;
+  age: string;
+}
+
+export interface K8sServiceDetail {
+  namespace: string;
+  name: string;
+  type: string;
+  clusterIP: string;
+  ports: string;
+}
+
+export interface K8sEventDetail {
+  type: string;
+  reason: string;
+  message: string;
+  object: string;
+  timestamp: string;
+}
+
+export interface K8sWorkloadsBundle {
+  connected: boolean;
+  deployments: K8sDeploymentDetail[];
+  services: K8sServiceDetail[];
+  events: K8sEventDetail[];
+}
+
+export interface JenkinsJobDetail {
+  name: string;
+  url: string;
+  color: string;
+}

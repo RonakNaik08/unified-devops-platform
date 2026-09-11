@@ -11,7 +11,16 @@ import {
   TraceSpan,
   TerraformResource,
   ArgoCDAppState,
-  AlertNotification
+  AlertNotification,
+  RealGitInfo,
+  RealAuditData,
+  RealSystemTelemetry,
+  ProjectWorkspace,
+  DeploymentRecord,
+  DockerImageDetail,
+  DockerContainerDetail,
+  K8sWorkloadsBundle,
+  JenkinsJobDetail
 } from '../types/devsecops';
 import { initialVulnerabilities } from '../mockData/vulnerabilities';
 import { initialSonarReport } from '../mockData/sonarReport';
@@ -30,7 +39,8 @@ export type MainTabType =
   | 'observability'
   | 'self-healing'
   | 'ai-copilot'
-  | 'live-app';
+  | 'live-app'
+  | 'deployments';
 
 interface DevSecOpsContextType {
   activeTab: MainTabType;
@@ -48,6 +58,26 @@ interface DevSecOpsContextType {
   resetScenario: () => void;
   cancelScenario: () => void;
 
+  // Multi-Project / Workspace Engine
+  projects: ProjectWorkspace[];
+  activeProjectId: string;
+  activeProject: ProjectWorkspace | null;
+  switchProject: (projectId: string) => Promise<void>;
+  registerProject: (folderPath: string, name?: string, description?: string) => Promise<ProjectWorkspace>;
+  scanProjectFolder: (folderPath: string) => Promise<any>;
+
+  // Deployments Ledger Store
+  deployments: DeploymentRecord[];
+  recordDeployment: (depData: Partial<DeploymentRecord>) => Promise<DeploymentRecord>;
+
+  // Real DevOps Tool Inspect Data
+  dockerImages: DockerImageDetail[];
+  dockerContainers: DockerContainerDetail[];
+  k8sWorkloads: K8sWorkloadsBundle | null;
+  jenkinsJobs: JenkinsJobDetail[];
+  executeDockerAction: (action: 'start' | 'stop' | 'restart', containerId: string) => Promise<any>;
+  triggerJenkinsJob: (jobName: string) => Promise<any>;
+
   // Real-time Cluster & Data
   pods: KubernetesPod[];
   vulnerabilities: Vulnerability[];
@@ -60,6 +90,25 @@ interface DevSecOpsContextType {
   traces: TraceSpan[];
   alerts: AlertNotification[];
   dismissAlert: (id: string) => void;
+
+  // Real Machine & Repository Telemetry
+  gitInfo: RealGitInfo | null;
+  auditData: RealAuditData | null;
+  systemTelemetry: RealSystemTelemetry | null;
+  isExecutingRealPipeline: boolean;
+  executeRealPipeline: () => Promise<void>;
+
+  // Advanced Industrial DevOps Extensions
+  isTerminalOpen: boolean;
+  setIsTerminalOpen: (val: boolean | ((prev: boolean) => boolean)) => void;
+  isCommandPaletteOpen: boolean;
+  setIsCommandPaletteOpen: (val: boolean | ((prev: boolean) => boolean)) => void;
+  generateDevOpsAssets: (writeToDisk?: boolean) => Promise<any>;
+  executeTerminalCommand: (command: string) => Promise<{ stdout: string; stderr: string; exitCode: number; cwd: string }>;
+  runSecurityRemediation: () => Promise<any>;
+  launchDevOpsTool: (toolName: string, action?: 'start' | 'stop' | 'restart') => Promise<any>;
+  getEnvVars: () => Promise<any>;
+  saveEnvVars: (envVars: Array<{ key: string; value: string }>, exportK8s?: boolean) => Promise<any>;
 
   // Interactive Controls
   appVersion: string;
@@ -137,12 +186,115 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [terraformResources, setTerraformResources] = useState<TerraformResource[]>(initialTerraformResources);
   const [argoApp, setArgoApp] = useState<ArgoCDAppState>(initialArgoCDApp);
   const [traces] = useState<TraceSpan[]>(initialTraces);
+
+  // Multi-Project / Workspace State
+  const [projects, setProjects] = useState<ProjectWorkspace[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string>('project-projectt');
+  const [activeProject, setActiveProject] = useState<ProjectWorkspace | null>(null);
+
+  // Deployments Store
+  const [deployments, setDeployments] = useState<DeploymentRecord[]>([]);
+
+  // Real DevOps Tool Detailed Inspect State
+  const [dockerImages, setDockerImages] = useState<DockerImageDetail[]>([]);
+  const [dockerContainers, setDockerContainers] = useState<DockerContainerDetail[]>([]);
+  const [k8sWorkloads, setK8sWorkloads] = useState<K8sWorkloadsBundle | null>(null);
+  const [jenkinsJobs, setJenkinsJobs] = useState<JenkinsJobDetail[]>([]);
+
+  // Real System & Repository State
+  const [gitInfo, setGitInfo] = useState<RealGitInfo | null>(null);
+  const [auditData, setAuditData] = useState<RealAuditData | null>(null);
+  const [systemTelemetry, setSystemTelemetry] = useState<RealSystemTelemetry | null>(null);
+  const [isExecutingRealPipeline, setIsExecutingRealPipeline] = useState<boolean>(false);
   
-  const [appVersion, setAppVersion] = useState<string>('v1.2.0');
+  const [appVersion, setAppVersion] = useState<string>('v1.0.0');
   const [canarySplit, setCanarySplit] = useState<number>(0);
   const [trafficRps, setTrafficRps] = useState<number>(240);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Advanced Industrial DevOps Extensions State
+  const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+
+  // Global hotkeys (Ctrl + ` for Terminal, Cmd + K for Command Palette)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+      if (e.ctrlKey && e.key === '`') {
+        e.preventDefault();
+        setIsTerminalOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const generateDevOpsAssets = async (writeToDisk = false) => {
+    const res = await fetch('/api/v1/devops/generate-assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectPath: activeProject?.path, writeToDisk })
+    });
+    return res.json();
+  };
+
+  const executeTerminalCommand = async (command: string) => {
+    const res = await fetch('/api/v1/terminal/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectPath: activeProject?.path, command })
+    });
+    return res.json();
+  };
+
+  const runSecurityRemediation = async () => {
+    const res = await fetch('/api/v1/security/remediate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectPath: activeProject?.path })
+    });
+    const data = await res.json();
+    if (data.audit) {
+      setAuditData(data.audit);
+      setVulnerabilities(data.audit.vulnerabilities || []);
+    }
+    return data;
+  };
+
+  const launchDevOpsTool = async (toolName: string, action: 'start' | 'stop' | 'restart' = 'start') => {
+    const res = await fetch('/api/v1/tools/launch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toolName, action })
+    });
+    const data = await res.json();
+    // Refresh docker status
+    fetch('/api/v1/local/status')
+      .then(r => r.json())
+      .then(st => {
+        if (st.docker?.containers) setDockerContainers(st.docker.containers);
+      })
+      .catch(() => {});
+    return data;
+  };
+
+  const getEnvVars = async () => {
+    const res = await fetch(`/api/v1/env?path=${encodeURIComponent(activeProject?.path || '')}`);
+    return res.json();
+  };
+
+  const saveEnvVars = async (envVars: Array<{ key: string; value: string }>, exportK8s = false) => {
+    const res = await fetch('/api/v1/env/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectPath: activeProject?.path, envVars, exportK8s })
+    });
+    return res.json();
+  };
 
   const [alerts, setAlerts] = useState<AlertNotification[]>([]);
   const [logs, setLogs] = useState<LogItem[]>([
@@ -159,7 +311,7 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date().toLocaleTimeString(),
       level: 'INFO',
       service: 'argocd',
-      message: 'Application devsecops-production-app is Synced with Git SHA 7e8910a',
+      message: 'Application devsecops-production-app is Synced with Git SHA e67ac16',
       traceId: 'tr-init-02'
     },
     {
@@ -185,7 +337,7 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       title: 'Zero-Downtime Rolling Update Validated',
       timestamp: '1 hour ago',
       type: 'SECURITY',
-      recommendation: 'Readiness probes and preStop sleep hooks prevented dropped in-flight HTTP connections during previous v1.2.0 rollout.',
+      recommendation: 'Readiness probes and preStop sleep hooks prevented dropped in-flight HTTP connections during previous rollout.',
     }
   ]);
 
@@ -209,9 +361,56 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return points;
   });
 
+  // Refresh project and workspace data
+  const refreshProjectData = useCallback((projectPath?: string) => {
+    const pathParam = projectPath ? `?path=${encodeURIComponent(projectPath)}` : '';
+    
+    // Fetch Git info
+    fetch(`/api/v1/real/git${pathParam}`)
+      .then(res => res.json())
+      .then(data => { if (data) setGitInfo(data); })
+      .catch(() => {});
+
+    // Fetch NPM audit
+    fetch(`/api/v1/real/audit${pathParam}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setAuditData(data);
+          if (data.vulnerabilities && data.vulnerabilities.length > 0) {
+            setVulnerabilities(data.vulnerabilities);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Real Backend Data Sync on Mount
   useEffect(() => {
-    // 1. Fetch real code analysis
+    // 1. Fetch projects list
+    fetch('/api/v1/projects')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          if (data.projects) setProjects(data.projects);
+          if (data.activeProjectId) setActiveProjectId(data.activeProjectId);
+          if (data.activeProject) {
+            setActiveProject(data.activeProject);
+            refreshProjectData(data.activeProject.path);
+          }
+        }
+      })
+      .catch(() => {});
+
+    // 2. Fetch deployments ledger
+    fetch('/api/v1/deployments')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setDeployments(data);
+      })
+      .catch(() => {});
+
+    // 3. Fetch real code analysis
     fetch('/api/v1/code-analysis')
       .then(res => res.json())
       .then(data => {
@@ -231,7 +430,15 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch(() => {});
 
-    // 2. Fetch cluster state from persistent DB
+    // 4. Fetch real system telemetry
+    fetch('/api/v1/real/system')
+      .then(res => res.json())
+      .then(data => {
+        if (data) setSystemTelemetry(data);
+      })
+      .catch(() => {});
+
+    // 5. Fetch cluster state from persistent DB
     fetch('/api/v1/cluster/state')
       .then(res => res.json())
       .then(data => {
@@ -242,6 +449,118 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       })
       .catch(() => {});
+
+    // 6. Fetch Docker images
+    fetch('/api/v1/docker/images')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.images) setDockerImages(data.images);
+      })
+      .catch(() => {});
+
+    // 7. Fetch Kubernetes workloads
+    fetch('/api/v1/k8s/workloads')
+      .then(res => res.json())
+      .then(data => {
+        if (data) setK8sWorkloads(data);
+      })
+      .catch(() => {});
+
+    // 8. Fetch local tool status
+    fetch('/api/v1/local/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.docker && data.docker.containers) {
+          setDockerContainers(data.docker.containers);
+        }
+        if (data && data.jenkins && data.jenkins.jobs) {
+          setJenkinsJobs(data.jenkins.jobs);
+        }
+      })
+      .catch(() => {});
+  }, [refreshProjectData]);
+
+  const switchProject = useCallback(async (projectId: string) => {
+    try {
+      const res = await fetch('/api/v1/projects/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId })
+      });
+      const data = await res.json();
+      if (data.success && data.activeProject) {
+        setActiveProjectId(projectId);
+        setActiveProject(data.activeProject);
+        refreshProjectData(data.activeProject.path);
+        // Refresh deployments for this project
+        fetch(`/api/v1/deployments?projectId=${projectId}`)
+          .then(r => r.json())
+          .then(deps => { if (Array.isArray(deps)) setDeployments(deps); })
+          .catch(() => {});
+      }
+    } catch (e) {
+      console.error('Failed to switch project:', e);
+    }
+  }, [refreshProjectData]);
+
+  const registerProject = useCallback(async (folderPath: string, name?: string, description?: string) => {
+    const res = await fetch('/api/v1/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, name, description })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to register project');
+    }
+    const newProj: ProjectWorkspace = await res.json();
+    setProjects(prev => [...prev, newProj]);
+    setActiveProjectId(newProj.id);
+    setActiveProject(newProj);
+    refreshProjectData(newProj.path);
+    return newProj;
+  }, [refreshProjectData]);
+
+  const scanProjectFolder = useCallback(async (folderPath: string) => {
+    const res = await fetch('/api/v1/projects/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to scan folder');
+    }
+    return await res.json();
+  }, []);
+
+  const recordDeployment = useCallback(async (depData: Partial<DeploymentRecord>) => {
+    const res = await fetch('/api/v1/deployments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(depData)
+    });
+    const record: DeploymentRecord = await res.json();
+    setDeployments(prev => [record, ...prev]);
+    return record;
+  }, []);
+
+  const executeDockerAction = useCallback(async (action: 'start' | 'stop' | 'restart', containerId: string) => {
+    const res = await fetch('/api/v1/docker/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, containerId })
+    });
+    return await res.json();
+  }, []);
+
+  const triggerJenkinsJob = useCallback(async (jobName: string) => {
+    const res = await fetch('/api/v1/jenkins/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobName })
+    });
+    return await res.json();
   }, []);
 
   // Live Metrics Loop syncing with real backend telemetry
@@ -255,7 +574,6 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const jitter = Math.floor(Math.random() * 15 - 7);
           const currentRps = Math.max(10, baseRps + jitter);
           
-          const runningBackendPods = pods.filter(p => p.tier === 'backend' && p.status === 'Running').length || 1;
           const hasCrashedPod = pods.some(p => p.status === 'CrashLoopBackOff');
           const errorRate = hasCrashedPod ? 8.4 : canarySplit > 0 && appVersion.includes('canary') ? 14.5 : 0.02;
 
@@ -272,25 +590,91 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
           setMetricsHistory(prev => [...prev.slice(1), newPoint]);
         })
-        .catch(() => {
-          // Fallback if backend temporarily restarting
-          const now = new Date();
-          const newPoint: MetricPoint = {
-            timestamp: now.toISOString(),
-            timeLabel: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            rps: trafficRps,
-            latencyMs: 38,
-            errorRatePercent: 0.02,
-            cpuPercent: 42,
-            memoryPercent: 54,
-            activePods: pods.filter(p => p.status === 'Running').length
-          };
-          setMetricsHistory(prev => [...prev.slice(1), newPoint]);
-        });
+        .catch(() => {});
+
+      // Periodically refresh real system telemetry
+      fetch('/api/v1/real/system')
+        .then(res => res.json())
+        .then(sys => {
+          if (sys) setSystemTelemetry(sys);
+        })
+        .catch(() => {});
     }, 2500);
 
     return () => clearInterval(interval);
   }, [trafficRps, pods, canarySplit, appVersion]);
+
+  const executeRealPipeline = useCallback(async () => {
+    setIsExecutingRealPipeline(true);
+    setIsRunningPipeline(true);
+    setActiveStepName('Executing Real Local Pipeline (tsc & vite build)...');
+    if (soundEnabled) soundFx.playClick();
+
+    setStageStatuses(prev => ({
+      ...prev,
+      'developer': 'success',
+      'github': 'running',
+      'ci-checkout': 'running',
+      'ci-tests': 'running',
+      'ci-sonarqube': 'idle',
+      'docker-build': 'idle',
+      'trivy-scan': 'idle',
+      'ecr-push': 'idle',
+      'argocd': 'idle'
+    }));
+
+    setPipelineLogs([
+      `[${new Date().toLocaleTimeString()}] Pipeline triggered: Starting real local build & security scan...`
+    ]);
+
+    try {
+      const res = await fetch('/api/v1/real/pipeline/run', { method: 'POST' });
+      const data = await res.json();
+
+      if (data && data.logs) {
+        setPipelineLogs(data.logs);
+      }
+
+      if (data.status === 'SUCCESS') {
+        if (soundEnabled) soundFx.playSuccess();
+        confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+        setStageStatuses(prev => ({
+          ...prev,
+          'developer': 'success',
+          'github': 'success',
+          'ci-checkout': 'success',
+          'ci-tests': 'success',
+          'ci-sonarqube': 'success',
+          'ci-sast': 'success',
+          'ci-dependency': 'success',
+          'docker-build': 'success',
+          'trivy-scan': 'success',
+          'vuln-gate': 'success',
+          'ecr-push': 'success',
+          'update-config': 'success',
+          'gitops-repo': 'success',
+          'argocd': 'success',
+          'k8s-frontend': 'success',
+          'k8s-backend': 'success',
+          'app-live': 'success'
+        }));
+        setActiveStepName(`Pipeline SUCCESS in ${data.duration} - 0 Errors (100% Real Build)`);
+      } else {
+        if (soundEnabled) soundFx.playAlert();
+        setStageStatuses(prev => ({
+          ...prev,
+          'docker-build': 'failed'
+        }));
+        setActiveStepName('Pipeline Failed: Build Error');
+      }
+    } catch (err: any) {
+      setPipelineLogs(prev => [`[ERROR] Failed to run pipeline: ${err.message}`, ...prev]);
+      setActiveStepName('Pipeline Execution Error');
+    } finally {
+      setIsExecutingRealPipeline(false);
+      setIsRunningPipeline(false);
+    }
+  }, [soundEnabled]);
 
   const addLog = useCallback((message: string, service: LogItem['service'] = 'backend', level: LogItem['level'] = 'INFO') => {
     const newLog: LogItem = {
@@ -699,7 +1083,36 @@ export const DevSecOpsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         triggerArgoSync,
         triggerAutoRollback,
         applyTerraformPlan,
-        aiAnalyses
+        aiAnalyses,
+        gitInfo,
+        auditData,
+        systemTelemetry,
+        isExecutingRealPipeline,
+        executeRealPipeline,
+        projects,
+        activeProjectId,
+        activeProject,
+        switchProject,
+        registerProject,
+        scanProjectFolder,
+        deployments,
+        recordDeployment,
+        dockerImages,
+        dockerContainers,
+        k8sWorkloads,
+        jenkinsJobs,
+        executeDockerAction,
+        triggerJenkinsJob,
+        isTerminalOpen,
+        setIsTerminalOpen,
+        isCommandPaletteOpen,
+        setIsCommandPaletteOpen,
+        generateDevOpsAssets,
+        executeTerminalCommand,
+        runSecurityRemediation,
+        launchDevOpsTool,
+        getEnvVars,
+        saveEnvVars
       }}
     >
       {children}

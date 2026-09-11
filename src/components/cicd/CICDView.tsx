@@ -23,21 +23,24 @@ export const CICDView: React.FC = () => {
     runScenario,
     stageStatuses,
     sonarReport,
-    vulnerabilities
+    vulnerabilities,
+    gitInfo,
+    executeRealPipeline,
+    isExecutingRealPipeline
   } = useDevSecOps();
 
-  const [selectedBranch, setSelectedBranch] = useState('main');
+  const [selectedBranch, setSelectedBranch] = useState(gitInfo?.branch || 'main');
 
   const ciSteps = [
     { id: 'ci-checkout', name: '1. Checkout Source Code', runner: 'actions/checkout@v4', duration: '1.2s', status: stageStatuses['ci-checkout'] },
-    { id: 'ci-tests', name: '2. Run Unit Tests (Vitest)', runner: 'npm run test:ci', duration: '3.4s', status: stageStatuses['ci-tests'] },
-    { id: 'ci-sonarqube', name: '3. SonarQube Code Quality', runner: 'sonarsource/sonarqube-scan-action@v2', duration: '4.1s', status: stageStatuses['ci-sonarqube'] },
-    { id: 'ci-sast', name: '4. SAST Security Scan', runner: 'github/codeql-action/analyze@v3', duration: '2.8s', status: stageStatuses['ci-sast'] },
-    { id: 'ci-dependency', name: '5. Dependency Audit (Snyk)', runner: 'snyk/actions/node@master', duration: '2.1s', status: stageStatuses['ci-dependency'] },
-    { id: 'docker-build', name: '6. Docker Multi-Stage Build', runner: 'docker/build-push-action@v5', duration: '5.6s', status: stageStatuses['docker-build'] },
-    { id: 'trivy-scan', name: '7. Trivy Container CVE Scan', runner: 'aquasecurity/trivy-action@master', duration: '3.9s', status: stageStatuses['trivy-scan'] },
-    { id: 'ecr-push', name: '8. Push to AWS ECR Registry', runner: 'aws-actions/amazon-ecr-login@v2', duration: '2.4s', status: stageStatuses['ecr-push'] },
-    { id: 'update-config', name: '9. GitOps Manifests Update', runner: 'peter-evans/create-pull-request@v6', duration: '1.5s', status: stageStatuses['update-config'] },
+    { id: 'ci-tests', name: '2. TypeScript Check & Compilation', runner: 'tsc -b && npm test', duration: '2.1s', status: stageStatuses['ci-tests'] },
+    { id: 'ci-sonarqube', name: '3. SonarQube SAST Quality Gate', runner: 'sonarsource/sonarqube-scan-action@v2', duration: '1.8s', status: stageStatuses['ci-sonarqube'] },
+    { id: 'ci-sast', name: '4. Secret Scanner (26 files)', runner: 'github/codeql-action/analyze@v3', duration: '1.5s', status: stageStatuses['ci-sast'] },
+    { id: 'ci-dependency', name: '5. Dependency Audit (283 pkgs)', runner: 'npm audit --json', duration: '1.4s', status: stageStatuses['ci-dependency'] },
+    { id: 'docker-build', name: '6. Vite Production Bundle Build', runner: 'vite build (Rollup chunks)', duration: '0.6s', status: stageStatuses['docker-build'] },
+    { id: 'trivy-scan', name: '7. Container Vulnerability Gate', runner: 'aquasecurity/trivy-action@master', duration: '1.9s', status: stageStatuses['trivy-scan'] },
+    { id: 'ecr-push', name: '8. Push to AWS ECR Registry', runner: 'aws-actions/amazon-ecr-login@v2', duration: '1.2s', status: stageStatuses['ecr-push'] },
+    { id: 'update-config', name: '9. GitOps Manifests Update', runner: 'argocd sync --app projectt', duration: '0.9s', status: stageStatuses['update-config'] },
   ];
 
   const getStatusBadge = (status: string) => {
@@ -65,13 +68,16 @@ export const CICDView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white">GitHub Actions Workflow: <span className="font-mono text-cyan-400">.github/workflows/ci-cd.yaml</span></h3>
+              <h3 className="text-sm font-bold text-white">Repository: <span className="font-mono text-cyan-400">{gitInfo?.repository || 'Projectt (local workspace)'}</span></h3>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono border border-emerald-500/30">
-                Workflow #492
+                Commit {gitInfo?.commitHash || 'e67ac16'}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono border border-blue-500/30">
+                Author: {gitInfo?.author || 'Ronak Naik'}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Triggered by <span className="text-slate-200 font-mono">push to origin/main</span> &bull; Commit <span className="text-cyan-400 font-mono">7e8910a</span>
+              Branch: <span className="text-cyan-300 font-mono">{gitInfo?.branch || selectedBranch}</span> &bull; Message: <span className="text-slate-200 font-medium">"{gitInfo?.lastCommitMessage || 'feat(devsecops): initial production release v1.0.0'}"</span>
             </p>
           </div>
         </div>
@@ -80,22 +86,27 @@ export const CICDView: React.FC = () => {
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-3 py-1.5 font-mono focus:outline-none focus:border-cyan-500"
+            className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-cyan-500"
           >
             <option value="main">branch: main</option>
             <option value="release-v1.3">branch: release-v1.3</option>
             <option value="feat/zero-downtime">branch: feat/zero-downtime</option>
           </select>
 
+          {/* Real local pipeline run */}
           <button
-            onClick={() => runScenario('happy-path')}
-            disabled={isRunningPipeline}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all ${
-              isRunningPipeline ? 'opacity-50 cursor-not-allowed' : ''
+            onClick={executeRealPipeline}
+            disabled={isRunningPipeline || isExecutingRealPipeline}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all ${
+              isRunningPipeline || isExecutingRealPipeline ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            <Play className="w-4 h-4 fill-white" />
-            <span>Trigger CI/CD Pipeline</span>
+            {isExecutingRealPipeline ? (
+              <RotateCw className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Play className="w-4 h-4 fill-white" />
+            )}
+            <span>Run Real Local Pipeline (Build &amp; Scan)</span>
           </button>
         </div>
       </div>

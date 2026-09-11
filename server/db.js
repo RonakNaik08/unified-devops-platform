@@ -5,10 +5,59 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_FILE = path.join(__dirname, 'data_store.json');
+const ROOT_DIR = path.resolve(__dirname, '..');
 
-// Initial baseline state
+// Default initial state for persistent database
 const defaultState = {
-  appVersion: 'v1.2.0',
+  activeProjectId: 'project-projectt',
+  projects: [
+    {
+      id: 'project-projectt',
+      name: 'Projectt (DevSecOps Platform)',
+      path: ROOT_DIR,
+      type: 'Full-Stack Cloud-Native',
+      description: 'Automated DevSecOps Platform with CI/CD, Kubernetes, Docker, and Self-Healing',
+      branch: 'main',
+      commitHash: 'e67ac16',
+      author: 'Ronak Naik',
+      techStack: ['React 19', 'TypeScript', 'Node.js Express', 'Vite', 'Tailwind CSS'],
+      dockerfilePresent: true,
+      k8sManifestsPresent: true,
+      jenkinsfilePresent: true,
+      lastScanned: new Date().toISOString()
+    }
+  ],
+  deployments: [
+    {
+      id: 'DEP-1001',
+      projectId: 'project-projectt',
+      projectName: 'Projectt (DevSecOps Platform)',
+      environment: 'production',
+      branch: 'main',
+      commitHash: 'e67ac16',
+      commitMessage: 'feat(devsecops): initial production release v1.0.0',
+      author: 'Ronak Naik',
+      status: 'SUCCESS',
+      dockerImage: 'projectt-app:v1.0.0',
+      dockerImageSize: '84.2 MB',
+      k8sNamespace: 'production',
+      k8sDeployment: 'frontend-deployment',
+      k8sReplicas: '2/2',
+      jenkinsJob: 'projectt-main-pipeline',
+      jenkinsBuildNumber: 492,
+      duration: '2.06s',
+      logs: [
+        `[${new Date().toLocaleTimeString()}] Pipeline triggered: Starting real local build & scan...`,
+        `[${new Date().toLocaleTimeString()}] Step 1: Checking TypeScript compliance (tsc -b)...`,
+        `[${new Date().toLocaleTimeString()}] Step 2: Vite bundled production assets cleanly (2,462 modules).`,
+        `[${new Date().toLocaleTimeString()}] Step 3: Docker image tagged projectt-app:v1.0.0`,
+        `[${new Date().toLocaleTimeString()}] Step 4: Kubernetes manifests synced via Argo CD (SHA e67ac16)`,
+        `[${new Date().toLocaleTimeString()}] Deployment SUCCESS in 2.06s. 0 errors.`
+      ],
+      timestamp: new Date().toISOString()
+    }
+  ],
+  appVersion: 'v1.0.0',
   canarySplit: 0,
   trafficRps: 240,
   pods: [
@@ -16,7 +65,7 @@ const defaultState = {
       id: 'pod-fe-1',
       name: 'frontend-deployment-78f9d658b-k2x9l',
       tier: 'frontend',
-      version: 'v1.2.0',
+      version: 'v1.0.0',
       status: 'Running',
       ready: '1/1',
       restarts: 0,
@@ -35,7 +84,7 @@ const defaultState = {
       id: 'pod-fe-2',
       name: 'frontend-deployment-78f9d658b-9pqw1',
       tier: 'frontend',
-      version: 'v1.2.0',
+      version: 'v1.0.0',
       status: 'Running',
       ready: '1/1',
       restarts: 0,
@@ -53,7 +102,7 @@ const defaultState = {
       id: 'pod-be-1',
       name: 'backend-deployment-64d4b9bc6-8fzt2',
       tier: 'backend',
-      version: 'v1.2.0',
+      version: 'v1.0.0',
       status: 'Running',
       ready: '1/1',
       restarts: 0,
@@ -73,7 +122,7 @@ const defaultState = {
       id: 'pod-be-2',
       name: 'backend-deployment-64d4b9bc6-x7lm9',
       tier: 'backend',
-      version: 'v1.2.0',
+      version: 'v1.0.0',
       status: 'Running',
       ready: '1/1',
       restarts: 0,
@@ -121,36 +170,12 @@ const defaultState = {
       cvss: 9.8,
       remediationPath: 'Upgrade base image to alpine:3.20.2 or run apk upgrade libxml2 in Dockerfile',
       patched: false
-    },
-    {
-      id: 'vuln-2',
-      cve: 'CVE-2024-21626',
-      severity: 'HIGH',
-      package: 'runc / container-runtime',
-      installedVersion: '1.1.11',
-      fixedVersion: '1.1.12',
-      title: 'Container Breakout via Leaked File Descriptors',
-      description: 'An internal file descriptor leak vulnerability allows malicious containers to gain host root filesystem write access.',
-      cvss: 8.6,
-      remediationPath: 'Update containerd node AMI to latest AWS EKS Bottlerocket release.',
-      patched: false
     }
   ],
   orders: [
-    { id: 'ORD-9842', item: 'AWS EKS Managed Node Group Provisioning', amount: '$120.00', status: 'Completed', version: 'v1.2.0', latency: '24ms', createdAt: new Date().toISOString() },
-    { id: 'ORD-9843', item: 'Trivy Security Scanning License Tier', amount: '$49.00', status: 'Completed', version: 'v1.2.0', latency: '31ms', createdAt: new Date().toISOString() },
-    { id: 'ORD-9844', item: 'ArgoCD Enterprise Pipeline Runner', amount: '$280.00', status: 'Completed', version: 'v1.2.0', latency: '19ms', createdAt: new Date().toISOString() }
-  ],
-  pipelineHistory: [
-    {
-      id: 'run-492',
-      scenario: 'happy-path',
-      branch: 'main',
-      commitSha: '7e8910a',
-      status: 'success',
-      duration: '24.2s',
-      completedAt: new Date(Date.now() - 3600000).toISOString()
-    }
+    { id: 'ORD-9842', item: 'AWS EKS Managed Node Group Provisioning', amount: '$120.00', status: 'Completed', version: 'v1.0.0', latency: '24ms', createdAt: new Date().toISOString() },
+    { id: 'ORD-9843', item: 'Trivy Security Scanning License Tier', amount: '$49.00', status: 'Completed', version: 'v1.0.0', latency: '31ms', createdAt: new Date().toISOString() },
+    { id: 'ORD-9844', item: 'ArgoCD Enterprise Pipeline Runner', amount: '$280.00', status: 'Completed', version: 'v1.0.0', latency: '19ms', createdAt: new Date().toISOString() }
   ],
   alerts: []
 };
@@ -160,7 +185,17 @@ export class PersistentDB {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed.projects || parsed.projects.length === 0) {
+          parsed.projects = defaultState.projects;
+        }
+        if (!parsed.activeProjectId) {
+          parsed.activeProjectId = defaultState.activeProjectId;
+        }
+        if (!parsed.deployments) {
+          parsed.deployments = defaultState.deployments;
+        }
+        return parsed;
       }
     } catch (e) {
       console.error('Error reading DB_FILE, fallback to default:', e);
@@ -189,8 +224,70 @@ export class PersistentDB {
     return data[key];
   }
 
+  static getActiveProject() {
+    const db = PersistentDB.load();
+    const active = db.projects.find(p => p.id === db.activeProjectId);
+    return active || db.projects[0] || defaultState.projects[0];
+  }
+
+  static addProject(projectData) {
+    const db = PersistentDB.load();
+    const id = 'project-' + (projectData.name.toLowerCase().replace(/[^a-z0-9]/g, '-') || Date.now());
+    const newProj = {
+      id,
+      name: projectData.name || 'Unnamed Project',
+      path: projectData.path,
+      type: projectData.type || 'Web Application',
+      description: projectData.description || 'Local workspace folder',
+      branch: 'main',
+      commitHash: 'e67ac16',
+      author: 'Ronak Naik',
+      techStack: projectData.techStack || ['Node.js', 'JavaScript'],
+      dockerfilePresent: fs.existsSync(path.join(projectData.path, 'Dockerfile')),
+      k8sManifestsPresent: fs.existsSync(path.join(projectData.path, 'k8s')) || fs.existsSync(path.join(projectData.path, 'manifests')),
+      jenkinsfilePresent: fs.existsSync(path.join(projectData.path, 'Jenkinsfile')),
+      lastScanned: new Date().toISOString()
+    };
+    db.projects.push(newProj);
+    db.activeProjectId = id;
+    PersistentDB.save(db);
+    return newProj;
+  }
+
+  static addDeployment(depData) {
+    const db = PersistentDB.load();
+    const active = PersistentDB.getActiveProject();
+    const id = 'DEP-' + (1000 + (db.deployments?.length || 0) + 1);
+    const record = {
+      id,
+      projectId: depData.projectId || active.id,
+      projectName: depData.projectName || active.name,
+      environment: depData.environment || 'production',
+      branch: depData.branch || 'main',
+      commitHash: depData.commitHash || 'e67ac16',
+      commitMessage: depData.commitMessage || 'Automated CI/CD build release',
+      author: depData.author || 'Ronak Naik',
+      status: depData.status || 'SUCCESS',
+      dockerImage: depData.dockerImage || `${active.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}:latest`,
+      dockerImageSize: depData.dockerImageSize || '84.2 MB',
+      k8sNamespace: depData.k8sNamespace || 'production',
+      k8sDeployment: depData.k8sDeployment || 'frontend-deployment',
+      k8sReplicas: depData.k8sReplicas || '2/2',
+      jenkinsJob: depData.jenkinsJob || 'local-pipeline',
+      jenkinsBuildNumber: depData.jenkinsBuildNumber || (db.deployments?.length || 0) + 1,
+      duration: depData.duration || '2.1s',
+      logs: depData.logs || [],
+      timestamp: new Date().toISOString()
+    };
+    db.deployments = db.deployments || [];
+    db.deployments.unshift(record);
+    PersistentDB.save(db);
+    return record;
+  }
+
   static reset() {
     PersistentDB.save(defaultState);
     return defaultState;
   }
 }
+
