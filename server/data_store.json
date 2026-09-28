@@ -240,9 +240,28 @@
       "k8sManifestsPresent": false,
       "jenkinsfilePresent": false,
       "lastScanned": "2026-09-11T17:13:57.685Z"
+    },
+    {
+      "id": "project-majorproject",
+      "name": "majorproject",
+      "path": "/Users/ronak/Desktop/majorproject",
+      "type": "Frontend / Node.js Service",
+      "description": "Local project at /Users/ronak/Desktop/majorproject",
+      "branch": "main",
+      "commitHash": "e67ac16",
+      "author": "Ronak Naik",
+      "techStack": [
+        "React",
+        "Express",
+        "Vite"
+      ],
+      "dockerfilePresent": false,
+      "k8sManifestsPresent": false,
+      "jenkinsfilePresent": false,
+      "lastScanned": "2026-09-16T09:10:10.336Z"
     }
   ],
-  "activeProjectId": "project-projectt",
+  "activeProjectId": "project-majorproject",
   "deployments": [
     {
       "id": "DEP-1005",
