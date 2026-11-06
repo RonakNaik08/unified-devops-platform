@@ -117,7 +117,7 @@ spec:
   const fetchClusterState = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/k8s/real/cluster');
+      const res = await fetch('/api/v1/k8s/real/cluster');
       const data = await res.json();
       setClusterContext(data.context || 'local-cluster');
       setIsConnected(data.connected);
@@ -141,7 +141,7 @@ spec:
     if (!scalingDeployment) return;
     setIsScaling(true);
     try {
-      await fetch('http://localhost:5001/api/v1/k8s/scale', {
+      await fetch('/api/v1/k8s/scale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -161,7 +161,7 @@ spec:
 
   const handleRestartPod = async (pod: K8sPodItem) => {
     try {
-      await fetch('http://localhost:5001/api/v1/k8s/pod/restart', {
+      await fetch('/api/v1/k8s/pod/restart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ podName: pod.name, namespace: pod.namespace })
@@ -176,7 +176,7 @@ spec:
     setIsApplying(true);
     setApplyResult(null);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/k8s/apply', {
+      const res = await fetch('/api/v1/k8s/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

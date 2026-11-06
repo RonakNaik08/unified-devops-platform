@@ -8,7 +8,7 @@ import { RealDataEngine } from './realData.js';
 import { ExtendedDevOpsEngine } from './extendedIntegrations.js';
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5050;
 
 app.use(cors());
 app.use(express.json());

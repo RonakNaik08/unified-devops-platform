@@ -259,9 +259,26 @@
       "k8sManifestsPresent": false,
       "jenkinsfilePresent": false,
       "lastScanned": "2026-09-16T09:10:10.336Z"
+    },
+    {
+      "id": "project-ds---parkinson-ml",
+      "name": "DS - Parkinson ML",
+      "path": "/Users/ronak/Desktop/DS",
+      "type": "Python / ML Data Science Service",
+      "description": "Parkinson Disease Detection Model",
+      "branch": "main",
+      "commitHash": "e67ac16",
+      "author": "Ronak Naik",
+      "techStack": [
+        "Python / Data Science"
+      ],
+      "dockerfilePresent": false,
+      "k8sManifestsPresent": false,
+      "jenkinsfilePresent": false,
+      "lastScanned": "2026-11-06T16:46:02.489Z"
     }
   ],
-  "activeProjectId": "project-majorproject",
+  "activeProjectId": "project-ds---parkinson-ml",
   "deployments": [
     {
       "id": "DEP-1005",

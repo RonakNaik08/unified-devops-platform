@@ -467,7 +467,7 @@ CMD ["nginx", "-g", "daemon off;"]`;
   /* =========================================================================
      4. MICROSERVICE API TESTER & LOAD BENCHMARKER
      ========================================================================= */
-  static async executeApiRequest({ method = 'GET', url = 'http://localhost:5001/api/healthz', headers = {}, body = null }) {
+  static async executeApiRequest({ method = 'GET', url = `http://localhost:${process.env.PORT || 5050}/api/healthz`, headers = {}, body = null }) {
     const startTime = process.hrtime.bigint();
 
     try {
@@ -562,7 +562,7 @@ CMD ["nginx", "-g", "daemon off;"]`;
     }
   }
 
-  static async runLoadBenchmark({ url = 'http://localhost:5001/api/healthz', method = 'GET', totalRequests = 50, concurrency = 5, headers = {}, body = null }) {
+  static async runLoadBenchmark({ url = `http://localhost:${process.env.PORT || 5050}/api/healthz`, method = 'GET', totalRequests = 50, concurrency = 5, headers = {}, body = null }) {
     const latencies = [];
     let successCount = 0;
     let failCount = 0;

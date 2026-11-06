@@ -97,7 +97,7 @@ export const HelmManagerView: React.FC = () => {
   const fetchReleases = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/helm/releases');
+      const res = await fetch('/api/v1/helm/releases');
       const data = await res.json();
       if (data.releases) setReleases(data.releases);
     } catch (err) {
@@ -118,7 +118,7 @@ export const HelmManagerView: React.FC = () => {
     setInstallStatus('Installing Helm chart on cluster...');
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/helm/install', {
+      const res = await fetch('/api/v1/helm/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,7 +143,7 @@ export const HelmManagerView: React.FC = () => {
 
   const handleUninstall = async (rel: HelmRelease) => {
     try {
-      await fetch('http://localhost:5001/api/v1/helm/uninstall', {
+      await fetch('/api/v1/helm/uninstall', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ releaseName: rel.name, namespace: rel.namespace })

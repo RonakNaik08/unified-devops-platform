@@ -46,7 +46,7 @@ export const RbacAuditView: React.FC = () => {
   const fetchAuditLogs = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/rbac/audit-log');
+      const res = await fetch('/api/v1/rbac/audit-log');
       const data = await res.json();
       if (Array.isArray(data)) setAuditLogs(data);
     } catch (err) {
@@ -66,7 +66,7 @@ export const RbacAuditView: React.FC = () => {
     setIsGenerating(true);
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/rbac/tokens/generate', {
+      const res = await fetch('/api/v1/rbac/tokens/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: tokenName.trim(), role: tokenRole })

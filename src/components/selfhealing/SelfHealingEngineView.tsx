@@ -46,7 +46,7 @@ export const SelfHealingEngineView: React.FC = () => {
   const fetchRules = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/selfhealing/rules');
+      const res = await fetch('/api/v1/selfhealing/rules');
       const data = await res.json();
       setRules(data);
     } catch (err) {
@@ -71,7 +71,7 @@ export const SelfHealingEngineView: React.FC = () => {
     });
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/selfhealing/trigger', {
+      const res = await fetch('/api/v1/selfhealing/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +104,7 @@ export const SelfHealingEngineView: React.FC = () => {
     setWebhookStatus(null);
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/selfhealing/webhook/test', {
+      const res = await fetch('/api/v1/selfhealing/webhook/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

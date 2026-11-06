@@ -30,7 +30,7 @@ export const TerraformIaCView: React.FC = () => {
   const fetchTfConfig = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/terraform/config');
+      const res = await fetch('/api/v1/terraform/config');
       const data = await res.json();
       setTfCode(data.code || '');
       setResources(data.resources || []);
@@ -50,7 +50,7 @@ export const TerraformIaCView: React.FC = () => {
     setIsPlanning(true);
     setPlanOutput(null);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/terraform/plan', {
+      const res = await fetch('/api/v1/terraform/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tfCode })

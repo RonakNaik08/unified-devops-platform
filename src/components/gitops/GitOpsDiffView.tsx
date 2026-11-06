@@ -31,7 +31,7 @@ export const GitOpsDiffView: React.FC = () => {
   const fetchDiff = async (hash: string) => {
     setIsLoadingDiff(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/v1/git/diff?commitHash=${hash}`);
+      const res = await fetch(`/api/v1/git/diff?commitHash=${hash}`);
       const data = await res.json();
       setDiffContent(data.diff || 'No diff available');
     } catch (err) {
@@ -55,7 +55,7 @@ export const GitOpsDiffView: React.FC = () => {
     setCommitLogs([`[${new Date().toLocaleTimeString()}] Executing git add . && git commit...`]);
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/git/commit', {
+      const res = await fetch('/api/v1/git/commit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: commitMessage.trim() })

@@ -39,7 +39,7 @@ export const DistributedTracingView: React.FC = () => {
   const fetchTracingData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/tracing/data');
+      const res = await fetch('/api/v1/tracing/data');
       const data = await res.json();
       if (data.spans) setSpans(data.spans);
       if (data.topology?.nodes) setNodes(data.topology.nodes);

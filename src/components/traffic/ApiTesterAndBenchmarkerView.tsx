@@ -22,14 +22,14 @@ export const ApiTesterAndBenchmarkerView: React.FC = () => {
 
   // REST Client State
   const [method, setMethod] = useState('GET');
-  const [url, setUrl] = useState('http://localhost:5001/api/healthz');
+  const [url, setUrl] = useState('http://localhost:5050/api/healthz');
   const [headersJson, setHeadersJson] = useState('{\n  "Accept": "application/json"\n}');
   const [bodyJson, setBodyJson] = useState('{\n  "query": "telemetry"\n}');
   const [isSending, setIsSending] = useState(false);
   const [responseResult, setResponseResult] = useState<any | null>(null);
 
   // Benchmarker State
-  const [benchUrl, setBenchUrl] = useState('http://localhost:5001/api/healthz');
+  const [benchUrl, setBenchUrl] = useState('http://localhost:5050/api/healthz');
   const [benchMethod, setBenchMethod] = useState('GET');
   const [totalRequests, setTotalRequests] = useState(50);
   const [concurrency, setConcurrency] = useState(5);
@@ -57,7 +57,7 @@ export const ApiTesterAndBenchmarkerView: React.FC = () => {
         }
       }
 
-      const res = await fetch('http://localhost:5001/api/v1/traffic/request', {
+      const res = await fetch('/api/v1/traffic/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -90,7 +90,7 @@ export const ApiTesterAndBenchmarkerView: React.FC = () => {
     setBenchmarkResult(null);
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/traffic/benchmark', {
+      const res = await fetch('/api/v1/traffic/benchmark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -177,7 +177,7 @@ export const ApiTesterAndBenchmarkerView: React.FC = () => {
                     required
                     value={url}
                     onChange={e => setUrl(e.target.value)}
-                    placeholder="http://localhost:5001/api/healthz"
+                    placeholder="http://localhost:5050/api/healthz"
                     className="flex-1 px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:border-purple-500"
                   />
 
@@ -197,14 +197,14 @@ export const ApiTesterAndBenchmarkerView: React.FC = () => {
                 <span className="text-slate-400 py-0.5">Presets:</span>
                 <button
                   type="button"
-                  onClick={() => { setMethod('GET'); setUrl('http://localhost:5001/api/healthz'); }}
+                  onClick={() => { setMethod('GET'); setUrl('http://localhost:5050/api/healthz'); }}
                   className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono"
                 >
                   GET /api/healthz
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setMethod('GET'); setUrl('http://localhost:5001/api/v1/telemetry'); }}
+                  onClick={() => { setMethod('GET'); setUrl('http://localhost:5050/api/v1/telemetry'); }}
                   className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono"
                 >
                   GET /telemetry

@@ -59,7 +59,7 @@ export const DockerManagerView: React.FC = () => {
   const fetchContainers = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/v1/docker/containers/real');
+      const res = await fetch('/api/v1/docker/containers/real');
       const data = await res.json();
       if (data.containers) {
         setContainers(data.containers);
@@ -80,7 +80,7 @@ export const DockerManagerView: React.FC = () => {
 
   const handleContainerAction = async (action: 'start' | 'stop' | 'restart' | 'rm', containerId: string) => {
     try {
-      await fetch('http://localhost:5001/api/v1/docker/container/action', {
+      await fetch('/api/v1/docker/container/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, containerId })
@@ -98,7 +98,7 @@ export const DockerManagerView: React.FC = () => {
     setBuildLogs([`[${new Date().toLocaleTimeString()}] Sending build request to Docker Daemon...`]);
 
     try {
-      const res = await fetch('http://localhost:5001/api/v1/docker/build', {
+      const res = await fetch('/api/v1/docker/build', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -122,7 +122,7 @@ export const DockerManagerView: React.FC = () => {
     setActiveLogContainer(container);
     setIsLoadingLogs(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/v1/docker/container/logs?containerId=${container.id}&tail=150`);
+      const res = await fetch(`/api/v1/docker/container/logs?containerId=${container.id}&tail=150`);
       const data = await res.json();
       setContainerLogs(data.logs || ['No logs returned']);
     } catch (err) {
@@ -146,7 +146,7 @@ export const DockerManagerView: React.FC = () => {
           return { key: key.trim(), value: rest.join('=').trim() };
         });
 
-      await fetch('http://localhost:5001/api/v1/docker/run', {
+      await fetch('/api/v1/docker/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

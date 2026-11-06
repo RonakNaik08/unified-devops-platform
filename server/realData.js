@@ -54,18 +54,24 @@ export class RealDataEngine {
     }
   }
 
-  // 2. Scan arbitrary folder to extract metadata, package.json, Dockerfile, and Git
+  // 2. Scan arbitrary folder (or file path) to extract metadata, package.json, Dockerfile, and Git
   static async scanFolder(folderPath) {
-    if (!fs.existsSync(folderPath)) {
-      throw new Error(`Directory does not exist: ${folderPath}`);
+    if (!folderPath || typeof folderPath !== 'string') {
+      throw new Error('Valid folder or file path is required');
     }
 
-    const stat = fs.statSync(folderPath);
-    if (!stat.isDirectory()) {
-      throw new Error(`Path is not a directory: ${folderPath}`);
+    let targetPath = path.resolve(folderPath.trim());
+    if (!fs.existsSync(targetPath)) {
+      throw new Error(`Directory does not exist: ${targetPath}`);
     }
 
-    const pkgFile = path.join(folderPath, 'package.json');
+    const stat = fs.statSync(targetPath);
+    // If a file was provided, automatically resolve to its parent directory
+    if (stat.isFile()) {
+      targetPath = path.dirname(targetPath);
+    }
+
+    const pkgFile = path.join(targetPath, 'package.json');
     let pkgData = {};
     if (fs.existsSync(pkgFile)) {
       try {
@@ -73,10 +79,21 @@ export class RealDataEngine {
       } catch {}
     }
 
-    const gitInfo = await RealDataEngine.getGitInfo(folderPath);
-    const hasDockerfile = fs.existsSync(path.join(folderPath, 'Dockerfile')) || fs.existsSync(path.join(folderPath, 'docker-compose.yml'));
-    const hasK8s = fs.existsSync(path.join(folderPath, 'k8s')) || fs.existsSync(path.join(folderPath, 'manifests')) || fs.existsSync(path.join(folderPath, 'helm'));
-    const hasJenkinsfile = fs.existsSync(path.join(folderPath, 'Jenkinsfile'));
+    const gitInfo = await RealDataEngine.getGitInfo(targetPath);
+    const hasDockerfile = fs.existsSync(path.join(targetPath, 'Dockerfile')) || fs.existsSync(path.join(targetPath, 'docker-compose.yml'));
+    const hasK8s = fs.existsSync(path.join(targetPath, 'k8s')) || fs.existsSync(path.join(targetPath, 'manifests')) || fs.existsSync(path.join(targetPath, 'helm'));
+    const hasJenkinsfile = fs.existsSync(path.join(targetPath, 'Jenkinsfile'));
+
+    // Check for Python / Data Science files
+    const hasRequirements = fs.existsSync(path.join(targetPath, 'requirements.txt')) || fs.existsSync(path.join(targetPath, 'pyproject.toml')) || fs.existsSync(path.join(targetPath, 'Pipfile'));
+    let hasPythonFiles = false;
+    try {
+      const files = fs.readdirSync(targetPath);
+      hasPythonFiles = files.some(f => f.endsWith('.py') || f.endsWith('.ipynb'));
+    } catch {}
+
+    const hasGo = fs.existsSync(path.join(targetPath, 'go.mod'));
+    const hasRust = fs.existsSync(path.join(targetPath, 'Cargo.toml'));
 
     const techStack = [];
     if (pkgData.dependencies?.react || pkgData.devDependencies?.react) techStack.push('React');
@@ -85,13 +102,28 @@ export class RealDataEngine {
     if (pkgData.devDependencies?.typescript || pkgData.dependencies?.typescript) techStack.push('TypeScript');
     if (pkgData.devDependencies?.vite) techStack.push('Vite');
     if (pkgData.devDependencies?.tailwindcss) techStack.push('Tailwind CSS');
-    if (techStack.length === 0) techStack.push('Node.js / JavaScript');
+    if (hasRequirements || hasPythonFiles) techStack.push('Python / Data Science');
+    if (hasGo) techStack.push('Go');
+    if (hasRust) techStack.push('Rust');
+
+    if (techStack.length === 0) {
+      techStack.push(fs.existsSync(pkgFile) ? 'Node.js / JavaScript' : 'General Workspace');
+    }
+
+    let projectType = 'Frontend / Node.js Service';
+    if (hasK8s) {
+      projectType = 'Cloud-Native Microservice';
+    } else if (hasDockerfile) {
+      projectType = 'Containerized App';
+    } else if (hasRequirements || hasPythonFiles) {
+      projectType = 'Python / ML Data Science Service';
+    }
 
     return {
-      name: pkgData.name || path.basename(folderPath),
-      path: folderPath,
-      type: hasK8s ? 'Cloud-Native Microservice' : hasDockerfile ? 'Containerized App' : 'Frontend / Node.js Service',
-      description: pkgData.description || `Local project at ${folderPath}`,
+      name: pkgData.name || path.basename(targetPath),
+      path: targetPath,
+      type: projectType,
+      description: pkgData.description || `Local project at ${targetPath}`,
       version: pkgData.version || '1.0.0',
       gitInfo,
       techStack,

@@ -526,11 +526,21 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono text-slate-700 pt-2 border-t border-slate-200">
-                  <div>Branch: <span className="font-bold">{scannedResult.branch}</span></div>
-                  <div>Commit: <span className="font-bold">{scannedResult.commitHash}</span></div>
-                  <div>Dockerfile: <span className="font-bold">{scannedResult.dockerfilePresent ? 'Yes' : 'No'}</span></div>
-                  <div>K8s Manifests: <span className="font-bold">{scannedResult.k8sManifestsPresent ? 'Yes' : 'No'}</span></div>
+                  <div>Branch: <span className="font-bold text-slate-900">{scannedResult.branch || scannedResult.gitInfo?.branch || 'main'}</span></div>
+                  <div>Commit: <span className="font-bold text-slate-900">{scannedResult.commitHash || scannedResult.gitInfo?.commitHash || 'HEAD'}</span></div>
+                  <div>Dockerfile: <span className="font-bold text-slate-900">{scannedResult.dockerfilePresent ? 'Yes' : 'No'}</span></div>
+                  <div>K8s: <span className="font-bold text-slate-900">{scannedResult.k8sManifestsPresent ? 'Yes' : 'No'}</span></div>
                 </div>
+
+                {scannedResult.techStack && scannedResult.techStack.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {scannedResult.techStack.map((tech: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-blue-100 text-blue-700">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <button
                   onClick={handleSaveProject}
