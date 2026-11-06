@@ -88,12 +88,13 @@ export const GlobalFolderDropzone: React.FC<GlobalFolderDropzoneProps> = ({
 
       try {
         setDropStatus(`Inspecting Git & Stack for: ${detectedPath}...`);
-        const scanRes = await scanProjectFolder(detectedPath);
+        const filesToScan = e.dataTransfer.files && e.dataTransfer.files.length > 0 ? e.dataTransfer.files : detectedPath;
+        const scanRes = await scanProjectFolder(filesToScan, detectedPath);
         
         const projName = scanRes.name || detectedPath.split('/').pop() || 'Imported Workspace';
         const projDesc = scanRes.description || `Imported folder via drag & drop`;
 
-        const newProject = await registerProject(detectedPath, projName, projDesc);
+        const newProject = await registerProject(detectedPath, projName, projDesc, scanRes);
 
         if (onWorkspaceImported && newProject) {
           onWorkspaceImported(newProject.id);

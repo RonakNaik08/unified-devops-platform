@@ -237,6 +237,7 @@ export interface ProjectWorkspace {
   dockerfilePresent: boolean;
   k8sManifestsPresent: boolean;
   jenkinsfilePresent: boolean;
+  version?: string;
   dependenciesCount?: number;
   packageJson?: any;
   lastScanned: string;

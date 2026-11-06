@@ -72,7 +72,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
     if (!newFolderPath.trim()) return;
     setModalError(null);
     try {
-      await registerProject(newFolderPath.trim(), newProjectName.trim(), newProjectDesc.trim());
+      await registerProject(newFolderPath.trim(), newProjectName.trim(), newProjectDesc.trim(), scanResult);
       setIsAddModalOpen(false);
       setNewFolderPath('');
       setNewProjectName('');

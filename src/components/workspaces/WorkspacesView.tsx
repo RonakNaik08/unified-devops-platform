@@ -54,14 +54,13 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
-  const performScan = async (path: string) => {
-    if (!path.trim()) return;
+  const performScan = async (path: string, filesList?: FileList | File[]) => {
     setIsScanning(true);
     setScanError(null);
     setScannedResult(null);
 
     try {
-      const res = await scanProjectFolder(path.trim());
+      const res = await scanProjectFolder(filesList && filesList.length > 0 ? filesList : path.trim(), path.trim());
       if (res.error) {
         setScanError(res.error);
       } else {
@@ -91,35 +90,22 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const firstFile = e.dataTransfer.files[0] as any;
       if (firstFile.path) {
-        // If file.path is available, extract directory path
         droppedPath = firstFile.path;
       } else if (firstFile.webkitRelativePath) {
         const rootDir = firstFile.webkitRelativePath.split('/')[0];
         droppedPath = `/Users/ronak/Desktop/${rootDir}`;
-      }
-    }
-
-    // 2. Try webkit entries
-    if (!droppedPath && e.dataTransfer.items) {
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        const item = e.dataTransfer.items[i];
-        if (item.kind === 'file') {
-          const entry = (item as any).webkitGetAsEntry?.();
-          if (entry) {
-            droppedPath = `/Users/ronak/Desktop/${entry.name}`;
-            break;
-          }
-        }
+      } else {
+        droppedPath = `/Users/ronak/Desktop/${firstFile.name}`;
       }
     }
 
     if (!droppedPath) {
-      droppedPath = '/Users/ronak/Desktop/Projectt';
+      droppedPath = '/Users/ronak/Desktop/Project';
     }
 
     setFolderInput(droppedPath);
     setShowAddModal(true);
-    performScan(droppedPath);
+    performScan(droppedPath, e.dataTransfer.files);
   };
 
   const handleNativeFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +114,6 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
       const firstFile = files[0] as any;
       let path = '';
       if (firstFile.path) {
-        // Electron / WebKit with path
         path = firstFile.path;
       } else if (firstFile.webkitRelativePath) {
         const dirName = firstFile.webkitRelativePath.split('/')[0];
@@ -139,15 +124,15 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
 
       setFolderInput(path);
       setShowAddModal(true);
-      performScan(path);
+      performScan(path, files);
     }
   };
 
   const handleSaveProject = async () => {
-    if (!folderInput.trim()) return;
+    if (!folderInput.trim() && !scannedResult) return;
     setIsSaving(true);
     try {
-      await registerProject(folderInput.trim(), projectName, projectDesc);
+      await registerProject(folderInput.trim() || scannedResult?.path, projectName, projectDesc, scannedResult);
       setShowAddModal(false);
       setFolderInput('');
       setScannedResult(null);
